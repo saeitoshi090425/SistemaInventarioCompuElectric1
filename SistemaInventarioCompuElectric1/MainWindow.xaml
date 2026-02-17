@@ -9,7 +9,7 @@
     <Grid>  
 
         Title="MainWindow" Height="450" Width="800" >
-    <Grid Background="Beige">
+    <Grid Background="Red">
         
     </Grid>
 </Window>
