@@ -24,5 +24,25 @@ namespace SistemaInventarioCompuElectric1
         {
             InitializeComponent();
         }
+
+        private void BotonInventario_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void BotonHistorial_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void BotonCotizar_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void BotonEstadisticas_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }
