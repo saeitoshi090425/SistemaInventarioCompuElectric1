@@ -1,0 +1,64 @@
+﻿<UserControl x:Class="SistemaInventarioCompuElectric1.ESTADISTICAS.estadisticas_ventana_principal"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:SistemaInventarioCompuElectric1.ESTADISTICAS"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid Background="White" Margin="40">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="Estadisticas"
+                   Foreground="#143c5b"
+FontWeight="Bold"
+FontSize="24"
+Margin="0,0,0,30"  />
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,30" >
+            <TextBlock Text="Tipo" VerticalAlignment="Center" Margin="0,0,20,0" FontSize="21"/>
+            <ComboBox  Width="210" Height="40" VerticalAlignment="Center" FontSize="18" Padding="10,10">
+                <ComboBoxItem  Content="Mayor Cantidad"/>
+                <ComboBoxItem  Content="Mayor Entradas"/>
+                <ComboBoxItem  Content="Menor Cantidad"/>
+                <ComboBoxItem  Content="Mayor Salidas"/>
+            </ComboBox>
+
+            <TextBlock Text="Año" VerticalAlignment="Center" Margin="50,0,20,0" FontSize="21"/>
+            <ComboBox  Width="130" Height="40" VerticalAlignment="Center" FontSize="18" Padding="10,10">
+                <ComboBoxItem  Content="2026"/>
+                <ComboBoxItem  Content="2027"/>
+                <ComboBoxItem  Content="2028"/>
+
+
+            </ComboBox>
+
+            <TextBlock Text="Mes" VerticalAlignment="Center" Margin="50,0,20,0" FontSize="21"/>
+            <ComboBox  Width="130" Height="40" VerticalAlignment="Center" FontSize="18" Padding="10,10">
+                <ComboBoxItem  Content="Enero"/>
+                <ComboBoxItem  Content="Febrero"/>
+                <ComboBoxItem  Content="Marzo"/>
+                <ComboBoxItem  Content="Abril"/>
+                <ComboBoxItem  Content="Mayo"/>
+                <ComboBoxItem  Content="Junio"/>
+                <ComboBoxItem  Content="Julio"/>
+                <ComboBoxItem  Content="Agosto"/>
+                <ComboBoxItem  Content="Septiembre"/>
+                <ComboBoxItem  Content="Octubre"/>
+                <ComboBoxItem  Content="Noviembre"/>
+                <ComboBoxItem  Content="Diciembre"/>
+
+
+            </ComboBox>
+
+        </StackPanel>
+
+
+    </Grid>
+
+
+</UserControl>

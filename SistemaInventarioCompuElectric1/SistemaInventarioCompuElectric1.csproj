@@ -189,6 +189,22 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Page Include="COTIZACION\cotizacion_ventana_principal.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="ESTADISTICAS\estadisticas_ventana_principal.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="HISTORIAL\historial_ventana_principal.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="INVENTARIO\inventario_ventana_principal.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -196,6 +212,18 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="COTIZACION\cotizacion_ventana_principal.xaml.cs">
+      <DependentUpon>cotizacion_ventana_principal.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="ESTADISTICAS\estadisticas_ventana_principal.xaml.cs">
+      <DependentUpon>estadisticas_ventana_principal.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="HISTORIAL\historial_ventana_principal.xaml.cs">
+      <DependentUpon>historial_ventana_principal.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="INVENTARIO\inventario_ventana_principal.xaml.cs">
+      <DependentUpon>inventario_ventana_principal.xaml</DependentUpon>
     </Compile>
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
@@ -235,5 +263,6 @@
   <ItemGroup>
     <Resource Include="IMAGENES\logo.jpg" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

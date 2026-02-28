@@ -23,26 +23,27 @@ namespace SistemaInventarioCompuElectric1
         public MainWindow()
         {
             InitializeComponent();
+            ContenedorPrincipal.Content = new INVENTARIO.inventario_ventana_principal();
         }
 
         private void BotonInventario_Click(object sender, RoutedEventArgs e)
         {
-
+            ContenedorPrincipal.Content = new INVENTARIO.inventario_ventana_principal();
         }
 
         private void BotonHistorial_Click(object sender, RoutedEventArgs e)
         {
-
+            ContenedorPrincipal.Content = new HISTORIAL.historial_ventana_principal();
         }
 
         private void BotonCotizar_Click(object sender, RoutedEventArgs e)
         {
-
+            ContenedorPrincipal.Content = new COTIZACION.cotizacion_ventana_principal();
         }
 
         private void BotonEstadisticas_Click(object sender, RoutedEventArgs e)
         {
-
+            ContenedorPrincipal.Content = new ESTADISTICAS.estadisticas_ventana_principal();
         }
     }
 }

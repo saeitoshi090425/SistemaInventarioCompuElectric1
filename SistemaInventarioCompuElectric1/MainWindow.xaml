@@ -10,7 +10,7 @@ xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         Title="Sistema de inventario " WindowState="Maximized" Cursor="" >
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition  Width="0.29*" MaxWidth="240"/>
+            <ColumnDefinition  Width="0.29*" MaxWidth="210"/>
 
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
