@@ -13,11 +13,18 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <TextBlock Text="Historial"
-                   Foreground="#143c5b"
-FontWeight="Bold"
-FontSize="24"
-Margin="0,0,0,30"  />
+        <TextBlock Text="Historial" 
+               Foreground="#143c5b"
+               FontWeight="Bold"
+               FontSize="31"
+               Margin="0,0,0,30"
+               />
+        <TextBlock Text="A continuación, se visualizan el historial de los movimientos en los productos." 
+        Foreground="#143c5b"
+        FontWeight="Normal"
+        FontSize="18"
+        Margin="0,55,0,30"
+        />
 
 
 

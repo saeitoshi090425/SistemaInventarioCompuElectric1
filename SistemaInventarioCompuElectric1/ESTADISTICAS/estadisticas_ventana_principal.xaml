@@ -13,11 +13,18 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <TextBlock Text="Estadisticas"
-                   Foreground="#143c5b"
-FontWeight="Bold"
-FontSize="24"
-Margin="0,0,0,30"  />
+        <TextBlock Text="Estadísticas" 
+               Foreground="#143c5b"
+               FontWeight="Bold"
+               FontSize="31"
+               Margin="0,0,0,30"
+               />
+        <TextBlock Text="A continuación, se visualizan las estadisticas del inventario." 
+        Foreground="#143c5b"
+        FontWeight="Normal"
+        FontSize="18"
+        Margin="0,55,0,30"
+        />
 
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,30" >
             <TextBlock Text="Tipo" VerticalAlignment="Center" Margin="0,0,20,0" FontSize="21"/>

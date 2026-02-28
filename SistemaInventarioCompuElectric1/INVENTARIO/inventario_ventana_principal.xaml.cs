@@ -34,5 +34,10 @@ namespace SistemaInventarioCompuElectric1.INVENTARIO
         {
 
         }
+
+        private void Exportar_inventario_excel(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }

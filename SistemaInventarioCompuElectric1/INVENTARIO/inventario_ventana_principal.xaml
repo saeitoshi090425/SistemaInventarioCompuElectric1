@@ -13,50 +13,110 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <TextBlock Text="Inventario de productos" 
+        <TextBlock Text="Inventario" 
                    Foreground="#143c5b"
                    FontWeight="Bold"
-                   FontSize="24"
+                   FontSize="31"
                    Margin="0,0,0,30"
                    />
+        <TextBlock Text="A continuación, se visualizan los productos de cada categoria." 
+            Foreground="#143c5b"
+            FontWeight="Normal"
+            FontSize="18"
+            Margin="0,55,0,30"
+            />
 
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,30">
-            <TextBlock Text="Categoria" VerticalAlignment="Center" Margin="0,0,20,0" FontSize="21"/>
+            <!-- TextBox de búsqueda con placeholder -->
+            <Grid Width="580" Height="40" Margin="0,0,0,0">
+                <TextBox x:Name="txtBuscar" Padding="15,10" FontSize="16" 
+                         Background="WhiteSmoke" TextChanged="TextBox_TextChanged"
+                         VerticalAlignment="Center"/>
+                <TextBlock x:Name="PlaceholderText" Text="Buscar productos..." 
+                          Foreground="Gray" FontSize="16" 
+                          IsHitTestVisible="False" 
+                          Margin="15,0,0,0" 
+                          VerticalAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Text, ElementName=txtBuscar}" Value="">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsFocused, ElementName=txtBuscar}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Grid>
 
+            <!-- Categoría -->
+            <TextBlock Text="Categoria :" VerticalAlignment="Center" Margin="60,0,20,0" FontSize="21"/>
             <ComboBox Width="130" Height="40" VerticalAlignment="Center" FontSize="18" Padding="10,10">
                 <ComboBoxItem Content="Robótica"/>
                 <ComboBoxItem Content="Accesorios"/>
                 <ComboBoxItem Content="Electrónica"/>
-
             </ComboBox>
 
-            <TextBlock  Text="Buscar" FontSize="21" Margin="60,0,0,0" VerticalAlignment="Center"/>
-            <TextBox  Width="580" VerticalAlignment="Center" Padding="15,10" Height="40" FontSize="16" Margin="30,0,0,0" TextChanged="TextBox_TextChanged"  Background="WhiteSmoke"/>
+            <!-- Contenedor para los botones (ocupará el espacio restante) -->
+            <Grid HorizontalAlignment="Right" VerticalAlignment="Center" Margin="390,0,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="10"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-            <Button Cursor="Hand" HorizontalAlignment="Center" Margin="140,0,0,0" Width="250" Height="40" 
-        FontWeight="Bold" Click="Añadir_nuevo_producto_click" >
-                <!-- ESTA LÍNEA -->
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <iconPacks:PackIconMaterial Kind="Plus" 
-         Width="20" Height="15" 
-         Margin="0,5,8,0" 
-         Foreground="White"/>
-                    <TextBlock Text="Añadir nuevo producto" FontSize="18" Foreground="White" />
-                </StackPanel>
-                <Button.Template>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="Border" Background="Green" >
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="#FF238E4C"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Button.Template>
-            </Button>
+                <!-- Botón Exportar a excel -->
+                <Button Grid.Column="0" Cursor="Hand" Width="150" Height="40" 
+                        FontWeight="Bold" Click="Exportar_inventario_excel">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <iconPacks:PackIconMaterial Kind="FileExcel" 
+                              Width="20" Height="15" 
+                              Margin="0,5,8,0" 
+                              Foreground="White"/>
+                        <TextBlock Text="Exportar" FontSize="18" Foreground="White" />
+                    </StackPanel>
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Border" Background="Green">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Border" Property="Background" Value="#FF238E4C"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
 
+                <!-- Botón Nuevo producto -->
+                <Button Grid.Column="2" Cursor="Hand" Width="150" Height="40" 
+                        FontWeight="Bold" Click="Añadir_nuevo_producto_click">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <iconPacks:PackIconMaterial Kind="Plus" 
+                             Width="20" Height="15" 
+                             Margin="0,5,8,0" 
+                             Foreground="White"/>
+                        <TextBlock Text="Nuevo" FontSize="18" Foreground="White" />
+                    </StackPanel>
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Border" Background="Red">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Border" Property="Background" Value="DarkRed"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </Grid>
         </StackPanel>
 
         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
@@ -66,36 +126,32 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <Border Grid.Row="0" Background="#143c5b" Padding="10" >
+                <Border Grid.Row="0" Background="#143c5b" Padding="10">
                     <Grid>
                         <Grid.ColumnDefinitions>
-
-                            <ColumnDefinition  Width="500"/>
-                            <ColumnDefinition  Width="190"/>
-                            <ColumnDefinition  Width="150"/>
-                            <ColumnDefinition  Width="150"/>
-                            <ColumnDefinition  Width="100"/>
-                            <ColumnDefinition  Width="100"/>
-                            <ColumnDefinition  Width="200"/>
-                            <ColumnDefinition  Width="160"/>
+                            <ColumnDefinition Width="500"/>
+                            <ColumnDefinition Width="190"/>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition Width="200"/>
+                            <ColumnDefinition Width="160"/>
                         </Grid.ColumnDefinitions>
-
 
                         <TextBlock Text="NOMBRE" FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="0"/>
                         <TextBlock Text="CODIGO" FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="1"/>
-                        <TextBlock Text="CANTIDAD " FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="2"/>
-                        <TextBlock Text="PRECIO " FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="3"/>
-                        <TextBlock Text="ESTANTE " FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="4"/>
-                        <TextBlock Text="FILA " FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="5"/>
-                        <TextBlock Text="FOTO " FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="6"/>
-                        <TextBlock Text="ACCIONES " FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="7"/>
+                        <TextBlock Text="CANTIDAD" FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="2"/>
+                        <TextBlock Text="PRECIO" FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="3"/>
+                        <TextBlock Text="ESTANTE" FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="4"/>
+                        <TextBlock Text="FILA" FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="5"/>
+                        <TextBlock Text="FOTO" FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="6"/>
+                        <TextBlock Text="ACCIONES" FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="7"/>
                     </Grid>
                 </Border>
 
-                <StackPanel x:Name="ProductosPanel" Grid.Row="1" Margin="0,5,0,0"
-                   />
+                <StackPanel x:Name="ProductosPanel" Grid.Row="1" Margin="0,5,0,0"/>
             </Grid>
         </ScrollViewer>
-
     </Grid>
 </UserControl>
