@@ -29,53 +29,39 @@ namespace SistemaInventarioCompuElectric1.SERVICIOS
 
         private void InicializarFirebase()
         {
-            // 1. Obtener la ruta de la carpeta FirebaseCredentials
+            // 1. Obtener la ruta de la raíz del proyecto
             string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
             string projectRoot = ObtenerRaizProyecto(baseDirectory);
-            string credentialsFolder = Path.Combine(projectRoot, "FirebaseCredentials");
 
-            if (!Directory.Exists(credentialsFolder))
+            // 2. Buscar el archivo de credenciales específico
+            string nombreArchivoCredenciales = "compuelectric-inventario-firebase-adminsdk-fbsvc-ca8bf2fdf4.json";
+            _credentialsPath = Path.Combine(projectRoot, nombreArchivoCredenciales);
+
+            // 3. Verificar que el archivo existe
+            if (!File.Exists(_credentialsPath))
             {
-                MessageBox.Show($"No se encontró la carpeta 'FirebaseCredentials' en:\n{credentialsFolder}",
+                MessageBox.Show($"No se encontró el archivo de credenciales:\n{_credentialsPath}\n\n" +
+                               $"Asegúrate de que el archivo '{nombreArchivoCredenciales}' esté en la raíz del proyecto.",
                                "Error de configuración");
                 return;
             }
-
-            // 2. Obtener todos los archivos de credenciales
-            var archivos = ObtenerArchivosCredenciales(credentialsFolder);
-
-            if (archivos.Count == 0)
-            {
-                MessageBox.Show($"No se encontraron archivos de credenciales en:\n{credentialsFolder}",
-                               "Error de configuración");
-                return;
-            }
-
-            // 3. ¡AUTOMÁGICO! Seleccionar el archivo según el usuario
-            _credentialsPath = SeleccionarArchivoAutomatico(archivos);
 
             // 4. Configurar Firebase
             Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", _credentialsPath);
             _firestoreDb = FirestoreDb.Create(_projectId);
 
-            // 5. Mostrar qué archivo se está usando (solo en debug)
-            System.Diagnostics.Debug.WriteLine($"✅ Usando: {Path.GetFileName(_credentialsPath)}");
+            // 5. Mostrar que se cargó correctamente
+            System.Diagnostics.Debug.WriteLine($"✅ Firebase inicializado correctamente con: {nombreArchivoCredenciales}");
         }
 
         private string ObtenerRaizProyecto(string baseDirectory)
         {
             var directory = new DirectoryInfo(baseDirectory);
 
-            // Subir hasta encontrar la carpeta con FirebaseCredentials o hasta 5 niveles
+            // Subir hasta encontrar un archivo .csproj o hasta 5 niveles
             for (int i = 0; i < 5; i++)
             {
                 if (directory == null) break;
-
-                // Si encontramos FirebaseCredentials en este nivel
-                if (Directory.Exists(Path.Combine(directory.FullName, "FirebaseCredentials")))
-                {
-                    return directory.FullName;
-                }
 
                 // Si encontramos un archivo .csproj (señal de raíz)
                 if (directory.GetFiles("*.csproj").Length > 0)
@@ -86,105 +72,11 @@ namespace SistemaInventarioCompuElectric1.SERVICIOS
                 directory = directory.Parent;
             }
 
+            // Si no encontramos .csproj, usar el directorio base
             return baseDirectory;
         }
 
-        private List<string> ObtenerArchivosCredenciales(string folder)
-        {
-            var archivos = new List<string>();
-
-            // Buscar archivos .json
-            archivos.AddRange(Directory.GetFiles(folder, "*.json"));
-
-            // Buscar archivos sin extensión pero con nombres específicos
-            foreach (var archivo in Directory.GetFiles(folder))
-            {
-                string nombre = Path.GetFileName(archivo);
-                if ((nombre.Contains("firebase-admintoken") ||
-                     nombre.Contains("firebase-admin") ||
-                     nombre.Contains("firebase-adminsdk")) &&
-                    !archivos.Contains(archivo))
-                {
-                    archivos.Add(archivo);
-                }
-            }
-
-            return archivos;
-        }
-
-        private string SeleccionarArchivoAutomatico(List<string> archivos)
-        {
-            // ============== CONFIGURACIÓN ==============
-            // Aquí defines qué archivo usa cada persona
-            // ===========================================
-
-            // Obtener nombre de usuario de Windows
-            string usuarioWindows = Environment.UserName;
-
-            // Diccionario de usuarios -> archivos (MODIFICA ESTO)
-            var configUsuarios = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
-                // PON AQUÍ TU NOMBRE DE USUARIO DE WINDOWS Y TU ARCHIVO
-                { "JUAN", "firebase-adminsdk-fbsvc-72d11f52e6.json" }, // TU archivo
-                
-                // PON AQUÍ EL NOMBRE DE USUARIO DE TU AMIGO Y SU ARCHIVO  
-                { "ADMIN", "firebase-adminsdk-fbsvc-4fa9673685.json" } // ARCHIVO DE TU AMIGO
-            };
-
-            // Buscar si hay un archivo asignado para este usuario
-            if (configUsuarios.TryGetValue(usuarioWindows, out string archivoUsuario))
-            {
-                // Buscar el archivo exacto
-                var archivoEncontrado = archivos.FirstOrDefault(a =>
-                    Path.GetFileName(a).Equals(archivoUsuario, StringComparison.OrdinalIgnoreCase));
-
-                if (archivoEncontrado != null)
-                {
-                    return archivoEncontrado;
-                }
-
-                // Si no encuentra el exacto, buscar por parte del nombre
-                string parteNombre = archivoUsuario.Replace(".json", "");
-                archivoEncontrado = archivos.FirstOrDefault(a =>
-                    Path.GetFileName(a).Contains(parteNombre));
-
-                if (archivoEncontrado != null)
-                {
-                    return archivoEncontrado;
-                }
-            }
-
-            // ============== REGLAS AUTOMÁTICAS ==============
-            // Si no hay configuración específica, usar reglas inteligentes
-            // =================================================
-
-            // Regla 1: Si solo hay un archivo, usarlo
-            if (archivos.Count == 1)
-                return archivos[0];
-
-            // Regla 2: Buscar el archivo de "f1d99bf37b" (tuyo)
-            var tuArchivo = archivos.FirstOrDefault(a =>
-                Path.GetFileName(a).Contains("f1d99bf37b"));
-            if (tuArchivo != null)
-                return tuArchivo;
-
-            // Regla 3: Buscar el archivo de "066b6e8b80" (de tu amigo)
-            var archivoAmigo = archivos.FirstOrDefault(a =>
-                Path.GetFileName(a).Contains("066b6e8b80"));
-            if (archivoAmigo != null)
-                return archivoAmigo;
-
-            // Regla 4: Buscar cualquier archivo con "admin"
-            var archivoAdmin = archivos.FirstOrDefault(a =>
-                Path.GetFileName(a).Contains("admin"));
-            if (archivoAdmin != null)
-                return archivoAdmin;
-
-            // Regla 5: Si nada funciona, usar el primero
-            return archivos[0];
-        }
-
-        // Tus métodos existentes (ObtenerTodosLosProductos, etc.)
+        // Tus métodos existentes (sin cambios)
         public async Task<List<ProductoModel>> ObtenerTodosLosProductos()
         {
             try
