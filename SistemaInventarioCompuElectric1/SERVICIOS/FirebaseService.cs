@@ -125,7 +125,7 @@ namespace SistemaInventarioCompuElectric1.SERVICIOS
             var configUsuarios = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 // PON AQUÍ TU NOMBRE DE USUARIO DE WINDOWS Y TU ARCHIVO
-                { "juan", "firebase-adminsdk-fbsvc-f1d99bf37b.json" }, // TU archivo
+                { "juan", "firebase-adminsdk-fbsvc-8728d84660.json" }, // TU archivo
                 
                 // PON AQUÍ EL NOMBRE DE USUARIO DE TU AMIGO Y SU ARCHIVO  
                 { "ADMIN", "firebase-adminsdk-fbsvc-066b6e8b80.json" } // ARCHIVO DE TU AMIGO
