@@ -7,27 +7,32 @@
              xmlns:local="clr-namespace:SistemaInventarioCompuElectric1.INVENTARIO"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="3800">
+
     <Grid Background="White" Margin="40">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
+
+        <!-- TÍTULO -->
         <TextBlock Text="Inventario" 
                    Foreground="#143c5b"
                    FontWeight="Bold"
                    FontSize="31"
-                   Margin="0,0,0,30"
-                   />
+                   Margin="0,0,0,30"/>
+
+        <!-- SUBTÍTULO -->
         <TextBlock Text="A continuación, se visualizan los productos de cada categoria." 
             Foreground="#143c5b"
             FontWeight="Normal"
             FontSize="18"
-            Margin="0,55,0,30"
-            />
+            Margin="0,55,0,30"/>
 
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,30">
-            <!-- TextBox de búsqueda con placeholder -->
+        <!-- BARRA DE HERRAMIENTAS -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,36">
+
+            <!-- BUSCADOR -->
             <Grid Width="580" Height="40" Margin="0,0,0,0">
                 <TextBox x:Name="txtBuscar" Padding="15,10" FontSize="16" 
                          Background="WhiteSmoke" TextChanged="TextBox_TextChanged"
@@ -53,24 +58,33 @@
                 </TextBlock>
             </Grid>
 
-            <!-- Categoría -->
-            <TextBlock Text="Categoria :" VerticalAlignment="Center" Margin="60,0,20,0" FontSize="21"/>
-            <ComboBox Width="130" Height="40" VerticalAlignment="Center" FontSize="18" Padding="10,10">
-                <ComboBoxItem Content="Robótica"/>
-                <ComboBoxItem Content="Accesorios"/>
-                <ComboBoxItem Content="Electrónica"/>
-            </ComboBox>
+            <!-- FILTRO POR CATEGORÍA CON TOTAL -->
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="20,0,0,0">
+                <TextBlock Text="Categoria:" VerticalAlignment="Center" FontSize="21"/>
+                <ComboBox x:Name="cmbCategoria" Width="130" Height="40" 
+                          VerticalAlignment="Center" FontSize="18" Padding="10,10" 
+                          Margin="10,0,0,0" SelectionChanged="CmbCategoria_SelectionChanged">
+                    <ComboBoxItem Content="Todos" IsSelected="True"/>
+                    <ComboBoxItem Content="Electrónica"/>
+                    <ComboBoxItem Content="Robótica"/>
+                    <ComboBoxItem Content="Accesorios"/>
+                </ComboBox>
+                <!-- TOTAL DE PRODUCTOS POR CATEGORÍA -->
+                <TextBlock x:Name="txtTotalCategoria" Text="" VerticalAlignment="Center" 
+                           Margin="15,0,0,0" FontSize="16" FontWeight="SemiBold" 
+                           Foreground="#143c5b"/>
+            </StackPanel>
 
-            <!-- Contenedor para los botones (ocupará el espacio restante) -->
-            <Grid HorizontalAlignment="Right" VerticalAlignment="Center" Margin="390,0,0,0">
+            <!-- BOTONES DE ACCIÓN -->
+            <Grid HorizontalAlignment="Right" VerticalAlignment="Center" Margin="50,0,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="10"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Botón Exportar a excel -->
-                <Button Grid.Column="0" Cursor="Hand" Width="150" Height="40" 
+                <!-- Botón Exportar a Excel -->
+                <Button Grid.Column="0" Cursor="Hand" Width="160" Height="40" 
                         FontWeight="Bold" Click="Exportar_inventario_excel">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                         <iconPacks:PackIconMaterial Kind="FileExcel" 
@@ -93,24 +107,24 @@
                     </Button.Template>
                 </Button>
 
-                <!-- Botón Nuevo producto -->
-                <Button Grid.Column="2" Cursor="Hand" Width="150" Height="40" 
+                <!-- Botón Nuevo Producto -->
+                <Button Grid.Column="2" Cursor="Hand" Width="200" Height="40" 
                         FontWeight="Bold" Click="Añadir_nuevo_producto_click">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                         <iconPacks:PackIconMaterial Kind="Plus" 
                              Width="20" Height="15" 
                              Margin="0,5,8,0" 
                              Foreground="White"/>
-                        <TextBlock Text="Nuevo" FontSize="18" Foreground="White" />
+                        <TextBlock Text="Nuevo Producto" FontSize="18" Foreground="White" />
                     </StackPanel>
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
-                            <Border x:Name="Border" Background="Red">
+                            <Border x:Name="Border" Background="DarkCyan">
                                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Border" Property="Background" Value="DarkRed"/>
+                                    <Setter TargetName="Border" Property="Background" Value="#195E5E"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -119,6 +133,12 @@
             </Grid>
         </StackPanel>
 
+    
+        <TextBlock x:Name="txtResultados" Grid.Row="1" Text="" 
+                   HorizontalAlignment="Right" VerticalAlignment="Bottom" 
+                   Margin="0,0,10,10" FontSize="14" Foreground="Gray"/>
+
+        <!-- SCROLLVIEWER PARA LA TABLA DE PRODUCTOS -->
         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
             <Grid x:Name="ProductosGrid">
                 <Grid.RowDefinitions>
@@ -126,30 +146,40 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
+                <!-- ENCABEZADO DE LA TABLA -->
                 <Border Grid.Row="0" Background="#143c5b" Padding="10">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="500"/>
-                            <ColumnDefinition Width="190"/>
-                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="400"/>
                             <ColumnDefinition Width="150"/>
                             <ColumnDefinition Width="100"/>
-                            <ColumnDefinition Width="100"/>
-                            <ColumnDefinition Width="200"/>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="300"/>
                             <ColumnDefinition Width="160"/>
                         </Grid.ColumnDefinitions>
 
                         <TextBlock Text="NOMBRE" FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="0"/>
                         <TextBlock Text="CODIGO" FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="1"/>
-                        <TextBlock Text="CANTIDAD" FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="2"/>
-                        <TextBlock Text="PRECIO" FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="3"/>
-                        <TextBlock Text="ESTANTE" FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="4"/>
-                        <TextBlock Text="FILA" FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="5"/>
-                        <TextBlock Text="FOTO" FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="6"/>
-                        <TextBlock Text="ACCIONES" FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="7"/>
+                        <TextBlock Text="CATEGORÍA" FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="2"/>
+                        <TextBlock Text="CANTIDAD" FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="3"/>
+                        <TextBlock Text="PRECIO" FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="4"/>
+                        <TextBlock Text="ESTANTE" FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="5"/>
+                        <TextBlock Text="FILA" FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="6"/>
+                        <TextBlock Text="FOTO" FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="7"/>
+                        <TextBlock Text="ACCIONES" FontSize="15" Foreground="White" FontWeight="Bold" Grid.Column="8"/>
                     </Grid>
                 </Border>
 
+                <!-- INDICADOR DE CARGA -->
+                <TextBlock x:Name="CargandoIndicator" Grid.Row="1" Text="Cargando productos..." 
+                           HorizontalAlignment="Center" VerticalAlignment="Center" 
+                           FontSize="18" Foreground="Gray" Visibility="Collapsed"
+                           Margin="0,50,0,0"/>
+
+                <!-- PANEL DE PRODUCTOS (SE LLENA DESDE C#) -->
                 <StackPanel x:Name="ProductosPanel" Grid.Row="1" Margin="0,5,0,0"/>
             </Grid>
         </ScrollViewer>
