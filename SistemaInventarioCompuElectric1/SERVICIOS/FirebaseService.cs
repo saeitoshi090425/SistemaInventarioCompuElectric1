@@ -1,9 +1,9 @@
-﻿// SERVICIOS/FirebaseService.cs
-using Google.Cloud.Firestore;
+﻿using Google.Cloud.Firestore;
 using SistemaInventarioCompuElectric1.INVENTARIO;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -13,33 +13,13 @@ namespace SistemaInventarioCompuElectric1.SERVICIOS
     {
         private FirestoreDb _firestoreDb;
         private string _projectId = "compuelectric-inventario";
+        private string _credentialsPath;
 
         public FirebaseService()
         {
             try
             {
-                string currentDirectory = AppDomain.CurrentDomain.BaseDirectory;
-                var jsonFiles = Directory.GetFiles(currentDirectory, "*.json");
-
-                string credentialsPath = null;
-                foreach (var file in jsonFiles)
-                {
-                    if (file.Contains("firebase-adminsdk") || file.Contains("serviceAccount"))
-                    {
-                        credentialsPath = file;
-                        break;
-                    }
-                }
-
-                if (credentialsPath == null)
-                {
-                    MessageBox.Show("No se encontró el archivo de credenciales de Firebase.",
-                                   "Error de configuración");
-                    return;
-                }
-
-                Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", credentialsPath);
-                _firestoreDb = FirestoreDb.Create(_projectId);
+                InicializarFirebase();
             }
             catch (Exception ex)
             {
@@ -47,6 +27,164 @@ namespace SistemaInventarioCompuElectric1.SERVICIOS
             }
         }
 
+        private void InicializarFirebase()
+        {
+            // 1. Obtener la ruta de la carpeta FirebaseCredentials
+            string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            string projectRoot = ObtenerRaizProyecto(baseDirectory);
+            string credentialsFolder = Path.Combine(projectRoot, "FirebaseCredentials");
+
+            if (!Directory.Exists(credentialsFolder))
+            {
+                MessageBox.Show($"No se encontró la carpeta 'FirebaseCredentials' en:\n{credentialsFolder}",
+                               "Error de configuración");
+                return;
+            }
+
+            // 2. Obtener todos los archivos de credenciales
+            var archivos = ObtenerArchivosCredenciales(credentialsFolder);
+
+            if (archivos.Count == 0)
+            {
+                MessageBox.Show($"No se encontraron archivos de credenciales en:\n{credentialsFolder}",
+                               "Error de configuración");
+                return;
+            }
+
+            // 3. ¡AUTOMÁGICO! Seleccionar el archivo según el usuario
+            _credentialsPath = SeleccionarArchivoAutomatico(archivos);
+
+            // 4. Configurar Firebase
+            Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", _credentialsPath);
+            _firestoreDb = FirestoreDb.Create(_projectId);
+
+            // 5. Mostrar qué archivo se está usando (solo en debug)
+            System.Diagnostics.Debug.WriteLine($"✅ Usando: {Path.GetFileName(_credentialsPath)}");
+        }
+
+        private string ObtenerRaizProyecto(string baseDirectory)
+        {
+            var directory = new DirectoryInfo(baseDirectory);
+
+            // Subir hasta encontrar la carpeta con FirebaseCredentials o hasta 5 niveles
+            for (int i = 0; i < 5; i++)
+            {
+                if (directory == null) break;
+
+                // Si encontramos FirebaseCredentials en este nivel
+                if (Directory.Exists(Path.Combine(directory.FullName, "FirebaseCredentials")))
+                {
+                    return directory.FullName;
+                }
+
+                // Si encontramos un archivo .csproj (señal de raíz)
+                if (directory.GetFiles("*.csproj").Length > 0)
+                {
+                    return directory.FullName;
+                }
+
+                directory = directory.Parent;
+            }
+
+            return baseDirectory;
+        }
+
+        private List<string> ObtenerArchivosCredenciales(string folder)
+        {
+            var archivos = new List<string>();
+
+            // Buscar archivos .json
+            archivos.AddRange(Directory.GetFiles(folder, "*.json"));
+
+            // Buscar archivos sin extensión pero con nombres específicos
+            foreach (var archivo in Directory.GetFiles(folder))
+            {
+                string nombre = Path.GetFileName(archivo);
+                if ((nombre.Contains("firebase-admintoken") ||
+                     nombre.Contains("firebase-admin") ||
+                     nombre.Contains("firebase-adminsdk")) &&
+                    !archivos.Contains(archivo))
+                {
+                    archivos.Add(archivo);
+                }
+            }
+
+            return archivos;
+        }
+
+        private string SeleccionarArchivoAutomatico(List<string> archivos)
+        {
+            // ============== CONFIGURACIÓN ==============
+            // Aquí defines qué archivo usa cada persona
+            // ===========================================
+
+            // Obtener nombre de usuario de Windows
+            string usuarioWindows = Environment.UserName;
+
+            // Diccionario de usuarios -> archivos (MODIFICA ESTO)
+            var configUsuarios = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                // PON AQUÍ TU NOMBRE DE USUARIO DE WINDOWS Y TU ARCHIVO
+                { "juan", "firebase-adminsdk-fbsvc-f1d99bf37b.json" }, // TU archivo
+                
+                // PON AQUÍ EL NOMBRE DE USUARIO DE TU AMIGO Y SU ARCHIVO  
+                { "ADMIN", "firebase-adminsdk-fbsvc-066b6e8b80.json" } // ARCHIVO DE TU AMIGO
+            };
+
+            // Buscar si hay un archivo asignado para este usuario
+            if (configUsuarios.TryGetValue(usuarioWindows, out string archivoUsuario))
+            {
+                // Buscar el archivo exacto
+                var archivoEncontrado = archivos.FirstOrDefault(a =>
+                    Path.GetFileName(a).Equals(archivoUsuario, StringComparison.OrdinalIgnoreCase));
+
+                if (archivoEncontrado != null)
+                {
+                    return archivoEncontrado;
+                }
+
+                // Si no encuentra el exacto, buscar por parte del nombre
+                string parteNombre = archivoUsuario.Replace(".json", "");
+                archivoEncontrado = archivos.FirstOrDefault(a =>
+                    Path.GetFileName(a).Contains(parteNombre));
+
+                if (archivoEncontrado != null)
+                {
+                    return archivoEncontrado;
+                }
+            }
+
+            // ============== REGLAS AUTOMÁTICAS ==============
+            // Si no hay configuración específica, usar reglas inteligentes
+            // =================================================
+
+            // Regla 1: Si solo hay un archivo, usarlo
+            if (archivos.Count == 1)
+                return archivos[0];
+
+            // Regla 2: Buscar el archivo de "f1d99bf37b" (tuyo)
+            var tuArchivo = archivos.FirstOrDefault(a =>
+                Path.GetFileName(a).Contains("f1d99bf37b"));
+            if (tuArchivo != null)
+                return tuArchivo;
+
+            // Regla 3: Buscar el archivo de "066b6e8b80" (de tu amigo)
+            var archivoAmigo = archivos.FirstOrDefault(a =>
+                Path.GetFileName(a).Contains("066b6e8b80"));
+            if (archivoAmigo != null)
+                return archivoAmigo;
+
+            // Regla 4: Buscar cualquier archivo con "admin"
+            var archivoAdmin = archivos.FirstOrDefault(a =>
+                Path.GetFileName(a).Contains("admin"));
+            if (archivoAdmin != null)
+                return archivoAdmin;
+
+            // Regla 5: Si nada funciona, usar el primero
+            return archivos[0];
+        }
+
+        // Tus métodos existentes (ObtenerTodosLosProductos, etc.)
         public async Task<List<ProductoModel>> ObtenerTodosLosProductos()
         {
             try
@@ -58,35 +196,28 @@ namespace SistemaInventarioCompuElectric1.SERVICIOS
 
                 var productos = new List<ProductoModel>();
 
-                // 1. LEER DE COLECCIÓN "electronica"
+                // Electronica
                 try
                 {
-                    CollectionReference electronicaRef = _firestoreDb.Collection("electronica");
-                    QuerySnapshot electronicaSnapshot = await electronicaRef.GetSnapshotAsync();
+                    var electronicaRef = _firestoreDb.Collection("electronica");
+                    var electronicaSnapshot = await electronicaRef.GetSnapshotAsync();
 
-                    foreach (DocumentSnapshot document in electronicaSnapshot.Documents)
+                    foreach (var document in electronicaSnapshot.Documents)
                     {
                         if (document.Exists)
                         {
-                            var producto = new ProductoModel();
-                            producto.Id = document.Id;
-                            producto.categoria = "Electronica"; // Asignar categoría manualmente
-
-                            if (document.ContainsField("nombre"))
-                                producto.nombre = document.GetValue<string>("nombre");
-                            if (document.ContainsField("codigo"))
-                                producto.codigo = document.GetValue<string>("codigo");
-                            if (document.ContainsField("cantidad"))
-                                producto.cantidad = document.GetValue<int>("cantidad");
-                            if (document.ContainsField("precio"))
-                                producto.precio = document.GetValue<double>("precio");
-                            if (document.ContainsField("estante"))
-                                producto.estante = document.GetValue<string>("estante");
-                            if (document.ContainsField("fila"))
-                                producto.fila = document.GetValue<string>("fila");
-                            if (document.ContainsField("imagenURL"))
-                                producto.imagenURL = document.GetValue<string>("imagenURL");
-
+                            var producto = new ProductoModel
+                            {
+                                Id = document.Id,
+                                categoria = "Electronica",
+                                nombre = document.ContainsField("nombre") ? document.GetValue<string>("nombre") : "",
+                                codigo = document.ContainsField("codigo") ? document.GetValue<string>("codigo") : "",
+                                cantidad = document.ContainsField("cantidad") ? document.GetValue<int>("cantidad") : 0,
+                                precio = document.ContainsField("precio") ? document.GetValue<double>("precio") : 0,
+                                estante = document.ContainsField("estante") ? document.GetValue<string>("estante") : "",
+                                fila = document.ContainsField("fila") ? document.GetValue<string>("fila") : "",
+                                imagenURL = document.ContainsField("imagenURL") ? document.GetValue<string>("imagenURL") : ""
+                            };
                             productos.Add(producto);
                         }
                     }
@@ -96,35 +227,28 @@ namespace SistemaInventarioCompuElectric1.SERVICIOS
                     System.Diagnostics.Debug.WriteLine($"Error en electronica: {ex.Message}");
                 }
 
-                // 2. LEER DE COLECCIÓN "robotica"
+                // Robotica
                 try
                 {
-                    CollectionReference roboticaRef = _firestoreDb.Collection("robotica");
-                    QuerySnapshot roboticaSnapshot = await roboticaRef.GetSnapshotAsync();
+                    var roboticaRef = _firestoreDb.Collection("robotica");
+                    var roboticaSnapshot = await roboticaRef.GetSnapshotAsync();
 
-                    foreach (DocumentSnapshot document in roboticaSnapshot.Documents)
+                    foreach (var document in roboticaSnapshot.Documents)
                     {
                         if (document.Exists)
                         {
-                            var producto = new ProductoModel();
-                            producto.Id = document.Id;
-                            producto.categoria = "Robotica"; // Asignar categoría manualmente
-
-                            if (document.ContainsField("nombre"))
-                                producto.nombre = document.GetValue<string>("nombre");
-                            if (document.ContainsField("codigo"))
-                                producto.codigo = document.GetValue<string>("codigo");
-                            if (document.ContainsField("cantidad"))
-                                producto.cantidad = document.GetValue<int>("cantidad");
-                            if (document.ContainsField("precio"))
-                                producto.precio = document.GetValue<double>("precio");
-                            if (document.ContainsField("estante"))
-                                producto.estante = document.GetValue<string>("estante");
-                            if (document.ContainsField("fila"))
-                                producto.fila = document.GetValue<string>("fila");
-                            if (document.ContainsField("imagenURL"))
-                                producto.imagenURL = document.GetValue<string>("imagenURL");
-
+                            var producto = new ProductoModel
+                            {
+                                Id = document.Id,
+                                categoria = "Robotica",
+                                nombre = document.ContainsField("nombre") ? document.GetValue<string>("nombre") : "",
+                                codigo = document.ContainsField("codigo") ? document.GetValue<string>("codigo") : "",
+                                cantidad = document.ContainsField("cantidad") ? document.GetValue<int>("cantidad") : 0,
+                                precio = document.ContainsField("precio") ? document.GetValue<double>("precio") : 0,
+                                estante = document.ContainsField("estante") ? document.GetValue<string>("estante") : "",
+                                fila = document.ContainsField("fila") ? document.GetValue<string>("fila") : "",
+                                imagenURL = document.ContainsField("imagenURL") ? document.GetValue<string>("imagenURL") : ""
+                            };
                             productos.Add(producto);
                         }
                     }
@@ -134,40 +258,28 @@ namespace SistemaInventarioCompuElectric1.SERVICIOS
                     System.Diagnostics.Debug.WriteLine($"Error en robotica: {ex.Message}");
                 }
 
-                // 3. LEER DE COLECCIÓN "productos" (si tiene productos)
+                // Productos
                 try
                 {
-                    CollectionReference productosRef = _firestoreDb.Collection("productos");
-                    QuerySnapshot productosSnapshot = await productosRef.GetSnapshotAsync();
+                    var productosRef = _firestoreDb.Collection("productos");
+                    var productosSnapshot = await productosRef.GetSnapshotAsync();
 
-                    foreach (DocumentSnapshot document in productosSnapshot.Documents)
+                    foreach (var document in productosSnapshot.Documents)
                     {
                         if (document.Exists)
                         {
-                            var producto = new ProductoModel();
-                            producto.Id = document.Id;
-
-                            // Intentar leer categoría del documento, si no existe asignar "Accesorios"
-                            if (document.ContainsField("categoria"))
-                                producto.categoria = document.GetValue<string>("categoria");
-                            else
-                                producto.categoria = "Accesorios";
-
-                            if (document.ContainsField("nombre"))
-                                producto.nombre = document.GetValue<string>("nombre");
-                            if (document.ContainsField("codigo"))
-                                producto.codigo = document.GetValue<string>("codigo");
-                            if (document.ContainsField("cantidad"))
-                                producto.cantidad = document.GetValue<int>("cantidad");
-                            if (document.ContainsField("precio"))
-                                producto.precio = document.GetValue<double>("precio");
-                            if (document.ContainsField("estante"))
-                                producto.estante = document.GetValue<string>("estante");
-                            if (document.ContainsField("fila"))
-                                producto.fila = document.GetValue<string>("fila");
-                            if (document.ContainsField("imagenURL"))
-                                producto.imagenURL = document.GetValue<string>("imagenURL");
-
+                            var producto = new ProductoModel
+                            {
+                                Id = document.Id,
+                                categoria = document.ContainsField("categoria") ? document.GetValue<string>("categoria") : "Accesorios",
+                                nombre = document.ContainsField("nombre") ? document.GetValue<string>("nombre") : "",
+                                codigo = document.ContainsField("codigo") ? document.GetValue<string>("codigo") : "",
+                                cantidad = document.ContainsField("cantidad") ? document.GetValue<int>("cantidad") : 0,
+                                precio = document.ContainsField("precio") ? document.GetValue<double>("precio") : 0,
+                                estante = document.ContainsField("estante") ? document.GetValue<string>("estante") : "",
+                                fila = document.ContainsField("fila") ? document.GetValue<string>("fila") : "",
+                                imagenURL = document.ContainsField("imagenURL") ? document.GetValue<string>("imagenURL") : ""
+                            };
                             productos.Add(producto);
                         }
                     }
@@ -186,16 +298,13 @@ namespace SistemaInventarioCompuElectric1.SERVICIOS
             }
         }
 
-        // Método para obtener productos por categoría (ahora más simple)
         public async Task<List<ProductoModel>> ObtenerProductosPorCategoria(string categoria)
         {
-            // Como ya tenemos todos los productos, filtramos por categoría
             var todos = await ObtenerTodosLosProductos();
             return todos.FindAll(p => p.categoria != null &&
                                      p.categoria.Equals(categoria, StringComparison.OrdinalIgnoreCase));
         }
 
-        // Método para agregar producto (ahora a la colección correspondiente)
         public async Task<bool> AgregarProducto(ProductoModel producto, string categoria)
         {
             try
@@ -212,7 +321,6 @@ namespace SistemaInventarioCompuElectric1.SERVICIOS
             }
         }
 
-        // Método para eliminar producto (de la colección específica)
         public async Task<bool> EliminarProducto(string categoria, string id)
         {
             try
@@ -229,35 +337,21 @@ namespace SistemaInventarioCompuElectric1.SERVICIOS
             }
         }
 
-        // Versión simplificada si no sabemos la categoría (buscamos en todas)
         public async Task<bool> EliminarProductoPorId(string id)
         {
             try
             {
-                // Buscar en electronica
-                var electronicaDoc = await _firestoreDb.Collection("electronica").Document(id).GetSnapshotAsync();
-                if (electronicaDoc.Exists)
-                {
-                    await electronicaDoc.Reference.DeleteAsync();
-                    return true;
-                }
+                var colecciones = new[] { "electronica", "robotica", "productos" };
 
-                // Buscar en robotica
-                var roboticaDoc = await _firestoreDb.Collection("robotica").Document(id).GetSnapshotAsync();
-                if (roboticaDoc.Exists)
+                foreach (var coleccion in colecciones)
                 {
-                    await roboticaDoc.Reference.DeleteAsync();
-                    return true;
+                    var doc = await _firestoreDb.Collection(coleccion).Document(id).GetSnapshotAsync();
+                    if (doc.Exists)
+                    {
+                        await doc.Reference.DeleteAsync();
+                        return true;
+                    }
                 }
-
-                // Buscar en productos
-                var productosDoc = await _firestoreDb.Collection("productos").Document(id).GetSnapshotAsync();
-                if (productosDoc.Exists)
-                {
-                    await productosDoc.Reference.DeleteAsync();
-                    return true;
-                }
-
                 return false;
             }
             catch (Exception ex)

@@ -369,9 +369,8 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <Content Include="compuelectric-inventario-firebase-adminsdk-fbsvc-f1d99bf37b.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    <None Include="FirebaseCredentials\compuelectric-inventario-firebase-adminsdk-fbsvc-066b6e8b80.json" />
+    <None Include="FirebaseCredentials\compuelectric-inventario-firebase-adminsdk-fbsvc-f1d99bf37b.json" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
