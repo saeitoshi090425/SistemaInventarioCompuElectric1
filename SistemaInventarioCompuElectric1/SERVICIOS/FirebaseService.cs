@@ -29,29 +29,98 @@ namespace SistemaInventarioCompuElectric1.SERVICIOS
 
         private void InicializarFirebase()
         {
-            // 1. Obtener la ruta de la raíz del proyecto
-            string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            string projectRoot = ObtenerRaizProyecto(baseDirectory);
+            // Buscar el archivo en ubicaciones SEGURAS fuera del proyecto
+            _credentialsPath = BuscarArchivoCredenciales();
 
-            // 2. Buscar el archivo de credenciales específico
-            string nombreArchivoCredenciales = "compuelectric-inventario-firebase-adminsdk-fbsvc-ca8bf2fdf4.json";
-            _credentialsPath = Path.Combine(projectRoot, nombreArchivoCredenciales);
-
-            // 3. Verificar que el archivo existe
-            if (!File.Exists(_credentialsPath))
+            // Verificar que el archivo existe
+            if (string.IsNullOrEmpty(_credentialsPath) || !File.Exists(_credentialsPath))
             {
-                MessageBox.Show($"No se encontró el archivo de credenciales:\n{_credentialsPath}\n\n" +
-                               $"Asegúrate de que el archivo '{nombreArchivoCredenciales}' esté en la raíz del proyecto.",
-                               "Error de configuración");
+                string nombreEsperado = "compuelectric-inventario-firebase-adminsdk-fbsvc-ca8bf2fdf4.json";
+                string escritorio = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+
+                string mensaje = "⚠️ NO SE ENCONTRÓ EL ARCHIVO DE CREDENCIALES\n\n" +
+                                $"Buscando específicamente: {nombreEsperado}\n\n" +
+                                "📌 SOLUCIÓN INMEDIATA:\n" +
+                                $"1. Tu archivo está en: {escritorio}\n" +
+                                $"2. Debe llamarse EXACTAMENTE: {nombreEsperado}\n" +
+                                $"3. Verifica que el nombre sea idéntico (incluyendo mayúsculas/minúsculas)\n\n" +
+                                $"📂 Ruta completa buscada:\n{Path.Combine(escritorio, nombreEsperado)}\n\n" +
+                                "🔍 Archivos encontrados en tu escritorio:\n";
+
+                // Listar archivos JSON en el escritorio para ayudar
+                try
+                {
+                    var archivosJson = Directory.GetFiles(escritorio, "*.json");
+                    foreach (var archivo in archivosJson)
+                    {
+                        mensaje += $"   • {Path.GetFileName(archivo)}\n";
+                    }
+                }
+                catch { }
+
+                MessageBox.Show(mensaje, "Error de configuración", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            // 4. Configurar Firebase
+            // Configurar Firebase
             Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", _credentialsPath);
             _firestoreDb = FirestoreDb.Create(_projectId);
 
-            // 5. Mostrar que se cargó correctamente
-            System.Diagnostics.Debug.WriteLine($"✅ Firebase inicializado correctamente con: {nombreArchivoCredenciales}");
+            // Mostrar que se cargó correctamente
+            MessageBox.Show($"✅ Firebase inicializado correctamente\n\nArchivo: {Path.GetFileName(_credentialsPath)}",
+                           "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
+
+            System.Diagnostics.Debug.WriteLine($"✅ Firebase inicializado correctamente con: {Path.GetFileName(_credentialsPath)}");
+            System.Diagnostics.Debug.WriteLine($"📍 Ruta: {_credentialsPath}");
+        }
+
+        private string BuscarArchivoCredenciales()
+        {
+            string nombreExacto = "compuelectric-inventario-firebase-adminsdk-fbsvc-ca8bf2fdf4.json";
+
+            // 1. Buscar en el Escritorio con el nombre exacto
+            string desktopPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), nombreExacto);
+            if (File.Exists(desktopPath))
+                return desktopPath;
+
+            // 2. Buscar en el Escritorio cualquier archivo JSON que contenga "firebase" o "admin"
+            try
+            {
+                var archivosEscritorio = Directory.GetFiles(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "*.json");
+
+                // Buscar por nombre exacto (sin ruta)
+                foreach (var archivo in archivosEscritorio)
+                {
+                    if (Path.GetFileName(archivo).Equals(nombreExacto, StringComparison.OrdinalIgnoreCase))
+                        return archivo;
+                }
+
+                // Buscar por parte del nombre
+                foreach (var archivo in archivosEscritorio)
+                {
+                    string nombre = Path.GetFileName(archivo);
+                    if (nombre.Contains("compuelectric") ||
+                        nombre.Contains("firebase") ||
+                        nombre.Contains("admin") ||
+                        nombre.Contains("fbsvc"))
+                    {
+                        return archivo;
+                    }
+                }
+            }
+            catch { }
+
+            // 3. Buscar en Mis Documentos
+            string documentsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), nombreExacto);
+            if (File.Exists(documentsPath))
+                return documentsPath;
+
+            // 4. Buscar en AppData/Roaming
+            string appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SistemaInventario", nombreExacto);
+            if (File.Exists(appDataPath))
+                return appDataPath;
+
+            return null;
         }
 
         private string ObtenerRaizProyecto(string baseDirectory)
