@@ -1,1 +1,6 @@
 ﻿
+*.json
+
+!app.config
+!packages.config
+!AssemblyInfo.cs

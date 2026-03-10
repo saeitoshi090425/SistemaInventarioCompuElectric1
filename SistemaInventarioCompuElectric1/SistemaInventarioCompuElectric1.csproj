@@ -430,7 +430,7 @@
     <None Include="protos\google\type\postal_address.proto" />
     <None Include="protos\google\type\quaternion.proto" />
     <None Include="protos\google\type\timeofday.proto" />
-    <None Include="Resources\firebase-credenciales.json.json" />
+    <None Include="Resources\firebase-credenciales.json" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
