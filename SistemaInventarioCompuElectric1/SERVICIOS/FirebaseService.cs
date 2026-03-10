@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -14,6 +15,7 @@ namespace SistemaInventarioCompuElectric1.SERVICIOS
         private FirestoreDb _firestoreDb;
         private string _projectId = "compuelectric-inventario";
         private string _credentialsPath;
+        private bool _usandoCredencialesTemporales = false;
 
         public FirebaseService()
         {
@@ -29,80 +31,201 @@ namespace SistemaInventarioCompuElectric1.SERVICIOS
 
         private void InicializarFirebase()
         {
-            // Buscar el archivo en ubicaciones SEGURAS fuera del proyecto
-            _credentialsPath = BuscarArchivoCredenciales();
-
-            // Verificar que el archivo existe
-            if (string.IsNullOrEmpty(_credentialsPath) || !File.Exists(_credentialsPath))
+            try
             {
-                string nombreEsperado = "compuelectric-inventario-firebase-adminsdk-fbsvc-ca8bf2fdf4.json";
-                string escritorio = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                // 1. PRIMERO: Intentar cargar desde recursos embebidos
+                if (CargarCredencialesDesdeRecursos())
+                {
+                    // Si cargó desde recursos, configurar Firebase
+                    Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", _credentialsPath);
+                    _firestoreDb = FirestoreDb.Create(_projectId);
 
-                string mensaje = "⚠️ NO SE ENCONTRÓ EL ARCHIVO DE CREDENCIALES\n\n" +
-                                $"Buscando específicamente: {nombreEsperado}\n\n" +
-                                "📌 SOLUCIÓN INMEDIATA:\n" +
-                                $"1. Tu archivo está en: {escritorio}\n" +
-                                $"2. Debe llamarse EXACTAMENTE: {nombreEsperado}\n" +
-                                $"3. Verifica que el nombre sea idéntico (incluyendo mayúsculas/minúsculas)\n\n" +
-                                $"📂 Ruta completa buscada:\n{Path.Combine(escritorio, nombreEsperado)}\n\n" +
-                                "🔍 Archivos encontrados en tu escritorio:\n";
+                    string mensaje = _usandoCredencialesTemporales ?
+                        "✅ Firebase inicializado correctamente (usando archivo temporal)" :
+                        "✅ Firebase inicializado correctamente";
 
-                // Listar archivos JSON en el escritorio para ayudar
+                    System.Diagnostics.Debug.WriteLine($"✅ Firebase inicializado: {_credentialsPath}");
+                    return;
+                }
+
+                // 2. SEGUNDO: Si no pudo cargar desde recursos, intentar búsqueda normal
+                _credentialsPath = BuscarArchivoCredenciales();
+
+                if (string.IsNullOrEmpty(_credentialsPath) || !File.Exists(_credentialsPath))
+                {
+                    MostrarErrorConInstrucciones();
+                    return;
+                }
+
+                // Configurar Firebase con el archivo encontrado
+                Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", _credentialsPath);
+                _firestoreDb = FirestoreDb.Create(_projectId);
+
+                System.Diagnostics.Debug.WriteLine($"✅ Firebase inicializado con: {_credentialsPath}");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error en inicialización: {ex.Message}\n\nStack Trace: {ex.StackTrace}",
+                    "Error crítico", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+
+        public async void TestFirebaseConnection()
+        {
+            try
+            {
+                string result = "=== COLECCIONES EN FIREBASE ===\n";
+
+                // Para C# 7.3, usamos GetAsyncEnumerator manualmente
+                var collections = _firestoreDb.ListRootCollectionsAsync();
+                var enumerator = collections.GetAsyncEnumerator();
+
                 try
                 {
-                    var archivosJson = Directory.GetFiles(escritorio, "*.json");
-                    foreach (var archivo in archivosJson)
+                    while (await enumerator.MoveNextAsync())
                     {
-                        mensaje += $"   • {Path.GetFileName(archivo)}\n";
+                        var collection = enumerator.Current;
+                        result += $"\n📁 Colección: {collection.Id}\n";
+
+                        try
+                        {
+                            // Obtener documentos de la colección
+                            var snapshot = await collection.GetSnapshotAsync();
+                            result += $"   📊 Documentos: {snapshot.Documents.Count}\n";
+
+                            // Mostrar primeros 3 documentos como ejemplo
+                            int count = 0;
+                            foreach (var doc in snapshot.Documents)
+                            {
+                                if (count >= 3) break;
+
+                                result += $"   📄 ID: {doc.Id}\n";
+
+                                // Mostrar campos del documento
+                                var dictionary = doc.ToDictionary();
+                                foreach (var kvp in dictionary)
+                                {
+                                    result += $"      • {kvp.Key}: {kvp.Value}\n";
+                                }
+                                count++;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            result += $"   ❌ Error al leer documentos: {ex.Message}\n";
+                        }
                     }
                 }
-                catch { }
+                finally
+                {
+                    await enumerator.DisposeAsync();
+                }
 
-                MessageBox.Show(mensaje, "Error de configuración", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                if (result == "=== COLECCIONES EN FIREBASE ===\n")
+                {
+                    result += "\n⚠️ No se encontraron colecciones en Firebase";
+                }
+
+                MessageBox.Show(result, "Test Firebase",
+                               MessageBoxButton.OK, MessageBoxImage.Information);
             }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error en TestFirebaseConnection: {ex.Message}\n\nStack: {ex.StackTrace}",
+                               "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        private bool CargarCredencialesDesdeRecursos()
+        {
+            try
+            {
+                Assembly assembly = Assembly.GetExecutingAssembly();
+                string[] recursos = assembly.GetManifestResourceNames();
 
-            // Configurar Firebase
-            Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", _credentialsPath);
-            _firestoreDb = FirestoreDb.Create(_projectId);
+                // Buscar el recurso JSON (sin mostrar MessageBox)
+                string resourceName = recursos.FirstOrDefault(r => r.EndsWith(".json"));
 
-            // Mostrar que se cargó correctamente
-            MessageBox.Show($"✅ Firebase inicializado correctamente\n\nArchivo: {Path.GetFileName(_credentialsPath)}",
-                           "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
+                if (resourceName == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("No se encontró archivo JSON embebido");
+                    return false;
+                }
 
-            System.Diagnostics.Debug.WriteLine($"✅ Firebase inicializado correctamente con: {Path.GetFileName(_credentialsPath)}");
-            System.Diagnostics.Debug.WriteLine($"📍 Ruta: {_credentialsPath}");
+                using (Stream resourceStream = assembly.GetManifestResourceStream(resourceName))
+                {
+                    if (resourceStream == null) return false;
+
+                    string tempPath = Path.GetTempFileName();
+                    string jsonPath = Path.ChangeExtension(tempPath, "json");
+
+                    if (File.Exists(tempPath)) File.Delete(tempPath);
+
+                    using (var fileStream = File.Create(jsonPath))
+                    {
+                        resourceStream.CopyTo(fileStream);
+                    }
+
+                    _credentialsPath = jsonPath;
+                    _usandoCredencialesTemporales = true;
+
+                    System.Diagnostics.Debug.WriteLine($"✅ Credenciales cargadas: {resourceName}");
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error cargando credenciales: {ex.Message}");
+                return false;
+            }
+        }
+
+        private void MostrarErrorConInstrucciones()
+        {
+            string nombreEsperado = "compuelectric-inventario-firebase-adminsdk-fbsvc-ca8bf2fdf4.json";
+            string escritorio = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+
+            string mensaje = "⚠️ NO SE ENCONTRÓ EL ARCHIVO DE CREDENCIALES\n\n" +
+                            "📌 INSTRUCCIONES PARA EMBEBER EL ARCHIVO:\n\n" +
+                            "1. Crea una carpeta 'Resources' en el proyecto\n" +
+                            "2. Copia tu archivo JSON como 'firebase-credenciales.json'\n" +
+                            "3. En propiedades del archivo, pon 'Acción de compilación = Recurso incrustado'\n" +
+                            "4. Recompila el proyecto\n\n" +
+                            "📌 O ALTERNATIVAMENTE:\n" +
+                            $"Copia el archivo al escritorio con el nombre:\n{nombreEsperado}\n\n" +
+                            "🔍 Archivos JSON en tu escritorio:\n";
+
+            // Listar archivos JSON en el escritorio para ayudar
+            try
+            {
+                var archivosJson = Directory.GetFiles(escritorio, "*.json");
+                foreach (var archivo in archivosJson)
+                {
+                    mensaje += $"   • {Path.GetFileName(archivo)}\n";
+                }
+            }
+            catch { }
+
+            MessageBox.Show(mensaje, "Error de configuración", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
 
         private string BuscarArchivoCredenciales()
         {
             string nombreExacto = "compuelectric-inventario-firebase-adminsdk-fbsvc-ca8bf2fdf4.json";
 
-            // 1. Buscar en el Escritorio con el nombre exacto
+            // 1. Buscar en el Escritorio
             string desktopPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), nombreExacto);
             if (File.Exists(desktopPath))
                 return desktopPath;
 
-            // 2. Buscar en el Escritorio cualquier archivo JSON que contenga "firebase" o "admin"
+            // 2. Buscar en el Escritorio cualquier JSON similar
             try
             {
                 var archivosEscritorio = Directory.GetFiles(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "*.json");
-
-                // Buscar por nombre exacto (sin ruta)
-                foreach (var archivo in archivosEscritorio)
-                {
-                    if (Path.GetFileName(archivo).Equals(nombreExacto, StringComparison.OrdinalIgnoreCase))
-                        return archivo;
-                }
-
-                // Buscar por parte del nombre
                 foreach (var archivo in archivosEscritorio)
                 {
                     string nombre = Path.GetFileName(archivo);
-                    if (nombre.Contains("compuelectric") ||
-                        nombre.Contains("firebase") ||
-                        nombre.Contains("admin") ||
-                        nombre.Contains("fbsvc"))
+                    if (nombre.Contains("compuelectric") || nombre.Contains("firebase") || nombre.Contains("admin"))
                     {
                         return archivo;
                     }
@@ -115,35 +238,10 @@ namespace SistemaInventarioCompuElectric1.SERVICIOS
             if (File.Exists(documentsPath))
                 return documentsPath;
 
-            // 4. Buscar en AppData/Roaming
-            string appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SistemaInventario", nombreExacto);
-            if (File.Exists(appDataPath))
-                return appDataPath;
-
             return null;
         }
 
-        private string ObtenerRaizProyecto(string baseDirectory)
-        {
-            var directory = new DirectoryInfo(baseDirectory);
 
-            // Subir hasta encontrar un archivo .csproj o hasta 5 niveles
-            for (int i = 0; i < 5; i++)
-            {
-                if (directory == null) break;
-
-                // Si encontramos un archivo .csproj (señal de raíz)
-                if (directory.GetFiles("*.csproj").Length > 0)
-                {
-                    return directory.FullName;
-                }
-
-                directory = directory.Parent;
-            }
-
-            // Si no encontramos .csproj, usar el directorio base
-            return baseDirectory;
-        }
 
         // Tus métodos existentes (sin cambios)
         public async Task<List<ProductoModel>> ObtenerTodosLosProductos()
@@ -152,6 +250,7 @@ namespace SistemaInventarioCompuElectric1.SERVICIOS
             {
                 if (_firestoreDb == null)
                 {
+                    MessageBox.Show("Firebase no está inicializado correctamente", "Error");
                     return new List<ProductoModel>();
                 }
 

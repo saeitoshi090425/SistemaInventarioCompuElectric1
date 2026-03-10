@@ -1,0 +1,11 @@
+﻿# Ignorar archivos de credenciales de Firebase
+*.json
+
+# Pero NO ignorar estos archivos importantes
+!app.config
+!packages.config
+
+# Ignorar carpetas temporales y de compilación
+bin/
+obj/
+.vs/
