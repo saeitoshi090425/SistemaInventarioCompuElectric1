@@ -6,7 +6,7 @@ xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SistemaInventarioCompuElectric1" WindowStartupLocation="CenterScreen"
         
-        mc:Ignorable="d"  Icon="/IMAGENES/ICONO.ico"  Width="1000" Height="1000" 
+        mc:Ignorable="d"  Icon="/IMAGENES/ICONO.ico"  Width="1001" Height="1000" 
         Title="Sistema de inventario " WindowState="Maximized" Cursor="" >
     <Grid>
         <Grid.ColumnDefinitions>
