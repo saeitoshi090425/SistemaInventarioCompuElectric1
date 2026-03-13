@@ -312,17 +312,9 @@ namespace SistemaInventarioCompuElectric1.INVENTARIO
         }
 
      
-        private void ItemControl_OnEditar(object sender, ProductoModel producto)
-        {
-            MessageBox.Show($"Función de editar para: {producto.nombre}", "Editar",
-                          MessageBoxButton.OK, MessageBoxImage.Information);
-        }
+ 
 
-        private void Añadir_nuevo_producto_click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Función de agregar producto en desarrollo", "Información",
-                          MessageBoxButton.OK, MessageBoxImage.Information);
-        }
+   
 
 
 
@@ -551,7 +543,51 @@ namespace SistemaInventarioCompuElectric1.INVENTARIO
             }
         }
 
+        private void Añadir_nuevo_producto_click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var agregarProductoWindow = new AgregarProductoWindow();
+                agregarProductoWindow.Owner = Window.GetWindow(this); // Establecer la ventana padre
 
+                // Mostrar la ventana como diálogo
+                bool? result = agregarProductoWindow.ShowDialog();
+
+                // Si se agregó un producto, recargar la lista
+                if (result == true && agregarProductoWindow.ProductoAgregado)
+                {
+                    CargarProductos(); // Recargar todos los productos
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error al abrir ventana de agregar producto: {ex.Message}",
+                               "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void ItemControl_OnEditar(object sender, ProductoModel producto)
+        {
+            try
+            {
+                var editarProductoWindow = new EditarProductoWindow(producto);
+                editarProductoWindow.Owner = Window.GetWindow(this); // Establecer la ventana padre
+
+                // Mostrar la ventana como diálogo
+                bool? result = editarProductoWindow.ShowDialog();
+
+                // Si se actualizó el producto, recargar la lista
+                if (result == true && editarProductoWindow.ProductoActualizado)
+                {
+                    CargarProductos(); // Recargar todos los productos
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error al abrir ventana de edición: {ex.Message}",
+                               "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
 
 
     }

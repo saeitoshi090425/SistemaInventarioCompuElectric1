@@ -381,6 +381,69 @@ namespace SistemaInventarioCompuElectric1.SERVICIOS
             }
         }
 
+        public async Task<bool> ActualizarProducto(ProductoModel producto, string nombreColeccion)
+        {
+            try
+            {
+                // Validar que Firebase esté inicializado
+                if (_firestoreDb == null)
+                {
+                    MessageBox.Show("Firebase no está inicializado", "Error");
+                    return false;
+                }
+
+                // Validar que tenga ID
+                if (string.IsNullOrEmpty(producto.Id))
+                {
+                    MessageBox.Show("El producto no tiene ID válido", "Error");
+                    return false;
+                }
+
+                // Mostrar en Debug los datos que se van a actualizar
+                System.Diagnostics.Debug.WriteLine("=== DATOS A ACTUALIZAR EN FIREBASE ===");
+                System.Diagnostics.Debug.WriteLine($"ID: {producto.Id}");
+                System.Diagnostics.Debug.WriteLine($"Nombre: {producto.nombre}");
+                System.Diagnostics.Debug.WriteLine($"Código: {producto.codigo}");
+                System.Diagnostics.Debug.WriteLine($"Categoría: {producto.categoria}");
+                System.Diagnostics.Debug.WriteLine($"Cantidad: {producto.cantidad}");
+                System.Diagnostics.Debug.WriteLine($"Precio: {producto.precio}");
+                System.Diagnostics.Debug.WriteLine($"Estante: {producto.estante}");
+                System.Diagnostics.Debug.WriteLine($"Fila: {producto.fila}");
+                System.Diagnostics.Debug.WriteLine($"ImagenURL: {producto.imagenURL}");
+                System.Diagnostics.Debug.WriteLine($"Colección: {nombreColeccion}");
+
+                // Obtener referencia al documento
+                DocumentReference docRef = _firestoreDb.Collection(nombreColeccion).Document(producto.Id);
+
+                // Crear un diccionario con los campos a actualizar
+                var updates = new Dictionary<string, object>
+        {
+            { "nombre", producto.nombre },
+            { "codigo", producto.codigo },
+            { "categoria", producto.categoria },
+            { "cantidad", producto.cantidad },
+            { "precio", producto.precio },
+            { "estante", producto.estante ?? "" },
+            { "fila", producto.fila ?? "" },
+            { "imagenURL", producto.imagenURL ?? "" }
+        };
+
+                // Actualizar el documento
+                await docRef.UpdateAsync(updates);
+
+                System.Diagnostics.Debug.WriteLine($"✅ Producto actualizado en colección: {nombreColeccion}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error al actualizar producto: {ex.Message}");
+                MessageBox.Show($"Error al actualizar producto: {ex.Message}", "Error",
+                               MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+        }
+
+
         public async Task<bool> EliminarProducto(string categoria, string id)
         {
             try
@@ -420,5 +483,9 @@ namespace SistemaInventarioCompuElectric1.SERVICIOS
                 return false;
             }
         }
+
+
+
+
     }
 }

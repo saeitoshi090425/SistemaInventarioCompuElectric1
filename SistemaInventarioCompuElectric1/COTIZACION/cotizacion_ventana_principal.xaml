@@ -6,31 +6,38 @@
              xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
              xmlns:local="clr-namespace:SistemaInventarioCompuElectric1.COTIZACION"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="8900">
+             d:DesignHeight="650" d:DesignWidth="8900"
+             Loaded="UserControl_Loaded">
+
     <Grid Background="White" Margin="40">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
+        <!-- TÍTULO -->
         <TextBlock Text="Cotización" 
                    Foreground="#143c5b"
                    FontWeight="Bold"
                    FontSize="31"
                    Margin="0,0,0,30"/>
 
-        <TextBlock Text="A continuación, agregue productos para obtener el precio de la cotización." 
+        <!-- SUBTÍTULO -->
+        <TextBlock Text="Seleccione productos para agregar a la cotización." 
                    Foreground="#143c5b"
                    FontWeight="Normal"
                    FontSize="18"
                    Margin="0,55,0,30"/>
 
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,30">
-            <!-- TextBox de búsqueda con placeholder -->
-            <Grid Width="580" Height="40" Margin="0,0,0,0">
+        <!-- BARRA DE BÚSQUEDA Y FILTROS -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,20">
+            <!-- Buscador -->
+            <Grid Width="580" Height="40" Margin="0,0,20,0">
                 <TextBox x:Name="txtBuscar" Padding="15,10" FontSize="16" 
-                         Background="WhiteSmoke" VerticalAlignment="Center"/>
+                         Background="WhiteSmoke" TextChanged="TxtBuscar_TextChanged"
+                         VerticalAlignment="Center"/>
                 <TextBlock x:Name="PlaceholderText" Text="Buscar productos para cotizar..." 
                           Foreground="Gray" FontSize="16" 
                           IsHitTestVisible="False" 
@@ -43,45 +50,194 @@
                                 <DataTrigger Binding="{Binding Text, ElementName=txtBuscar}" Value="">
                                     <Setter Property="Visibility" Value="Visible"/>
                                 </DataTrigger>
-                                <DataTrigger Binding="{Binding IsFocused, ElementName=txtBuscar}" Value="True">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </TextBlock.Style>
                 </TextBlock>
             </Grid>
 
-            <!-- Categoría (ahora a la derecha del buscador) -->
-            <TextBlock Text="Categoria" VerticalAlignment="Center" Margin="60,0,20,0" FontSize="21"/>
-            <ComboBox Width="130" Height="40" VerticalAlignment="Center" FontSize="18" Padding="10,10">
+            <!-- Filtro por categoría -->
+            <TextBlock Text="Categoría:" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="18"/>
+            <ComboBox x:Name="cmbCategoria" Width="150" Height="40" 
+                      VerticalAlignment="Center" FontSize="16" Padding="10,10"
+                      SelectionChanged="CmbCategoria_SelectionChanged">
+                <ComboBoxItem Content="Todas" IsSelected="True"/>
+                <ComboBoxItem Content="Electrónica"/>
                 <ComboBoxItem Content="Robótica"/>
                 <ComboBoxItem Content="Accesorios"/>
-                <ComboBoxItem Content="Electrónica"/>
             </ComboBox>
 
-            <Button Cursor="Hand" HorizontalAlignment="Center" Margin="140,0,0,0" Width="200" Height="40"  
-                    FontWeight="Bold" Click="Agregar_producto_cotizar" Foreground="White">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <iconPacks:PackIconMaterial Kind="CurrencyUsd" 
-                                                Width="20" Height="15" 
-                                                Margin="0,5,8,0" 
-                                                Foreground="White"/>
-                    <TextBlock Text="Agregar" FontSize="18" />
-                </StackPanel>
-                <Button.Template>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="Borde" Background="DarkRed">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Borde" Property="Background" Value="Red"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Button.Template>
-            </Button>
+            <!-- Contador de productos -->
+            <TextBlock x:Name="txtContadorProductos" Text="0 productos disponibles" 
+                       VerticalAlignment="Center" Margin="30,0,0,0"
+                       FontSize="14" Foreground="Gray"/>
         </StackPanel>
+
+        <!-- CONTENEDOR PRINCIPAL CON DOS COLUMNAS -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="550"/>
+                <!-- Aumentado de 450 a 550 para más espacio -->
+            </Grid.ColumnDefinitions>
+
+            <!-- COLUMNA IZQUIERDA: LISTA DE PRODUCTOS DISPONIBLES -->
+            <Border Grid.Column="0" BorderBrush="LightGray" BorderThickness="1" CornerRadius="5" Padding="10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Encabezado de productos disponibles -->
+                    <Border Grid.Row="0" Background="#143c5b" Padding="10" CornerRadius="5,5,0,0" Margin="0,0,0,10">
+                        <TextBlock Text="PRODUCTOS DISPONIBLES" FontSize="16" FontWeight="Bold" 
+                                   Foreground="White" HorizontalAlignment="Center"/>
+                    </Border>
+
+                    <!-- ScrollViewer para la lista de productos -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" 
+                                  HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel x:Name="ProductosPanel" Margin="0,0,5,0"/>
+                    </ScrollViewer>
+
+                    <!-- Indicador de carga -->
+                    <TextBlock x:Name="CargandoIndicator" Grid.Row="1" 
+                               Text="Cargando productos..." 
+                               HorizontalAlignment="Center" VerticalAlignment="Center" 
+                               FontSize="18" Foreground="Gray" Visibility="Collapsed"/>
+                </Grid>
+            </Border>
+
+            <!-- Separador -->
+            <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" 
+                          Background="LightGray" Width="2"/>
+
+            <!-- COLUMNA DERECHA: COTIZACIÓN ACTUAL -->
+            <Border Grid.Column="2" BorderBrush="LightGray" BorderThickness="1" CornerRadius="5" Padding="10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <!-- Nueva fila para botones -->
+                    </Grid.RowDefinitions>
+
+                    <!-- Encabezado de cotización -->
+                    <Border Grid.Row="0" Background="#143c5b" Padding="10" CornerRadius="5,5,0,0" Margin="0,0,0,10">
+                        <TextBlock Text="COTIZACIÓN ACTUAL" FontSize="16" FontWeight="Bold" 
+                                   Foreground="White" HorizontalAlignment="Center"/>
+                    </Border>
+
+                    <!-- ScrollViewer para la lista de cotización -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" 
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  MaxHeight="400">
+                        <!-- Altura máxima para el scroll -->
+                        <StackPanel x:Name="CotizacionPanel" Margin="0,0,5,0"/>
+                    </ScrollViewer>
+
+                    <!-- Mensaje cuando no hay productos -->
+                    <TextBlock x:Name="txtSinProductos" Grid.Row="1" 
+                               Text="No hay productos en la cotización" 
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               FontSize="14" Foreground="Gray" 
+                               Visibility="Visible"/>
+
+                    <!-- RESULTADOS DE COTIZACIÓN -->
+                    <Border Grid.Row="2" Background="#F5F5F5" Padding="15" CornerRadius="5" Margin="0,10,0,10">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="10"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- SUBTOTAL -->
+                            <Grid Grid.Row="0" Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Subtotal:" FontSize="18" FontWeight="SemiBold"/>
+                                <TextBlock x:Name="txtSubtotal" Grid.Column="1" 
+                                           Text="S/ 0.00" FontSize="18" FontWeight="Bold" 
+                                           Foreground="#143c5b"/>
+                            </Grid>
+
+                            <!-- TOTAL -->
+                            <Grid Grid.Row="2" Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="TOTAL:" FontSize="24" FontWeight="Bold" 
+                                           Foreground="#143c5b"/>
+                                <TextBlock x:Name="txtTotal" Grid.Column="1" 
+                                           Text="S/ 0.00" FontSize="24" FontWeight="Bold" 
+                                           Foreground="Green"/>
+                            </Grid>
+                        </Grid>
+                    </Border>
+
+                    <!-- BOTONES DE ACCIÓN - REORDENADOS -->
+                    <StackPanel Grid.Row="3" Orientation="Horizontal" 
+                                HorizontalAlignment="Center" Margin="0,5,0,0">
+
+                        <!-- Botón Generar PDF (ahora primero) -->
+                        <Button x:Name="btnGenerarPDF" Content="GENERAR PDF" 
+                                Width="140" Height="45" Margin="5"
+                                Background="#143c5b" Foreground="White" 
+                                FontWeight="Bold" FontSize="14"
+                                Cursor="Hand" Click="BtnGenerarPDF_Click">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Border" Background="#143c5b" CornerRadius="5">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <iconPacks:PackIconMaterial Kind="FilePdfBox" 
+                                                                        Width="20" Height="20" 
+                                                                        Foreground="White" Margin="0,0,8,0"/>
+                                            <ContentPresenter Content="{TemplateBinding Content}"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Border" Property="Background" Value="#1f5c8a"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+
+                        <!-- Botón Limpiar (ahora segundo) -->
+                        <Button x:Name="btnLimpiar" Content="LIMPIAR" 
+                                Width="120" Height="45" Margin="5"
+                                Background="#6c757d" Foreground="White" 
+                                FontWeight="Bold" FontSize="14"
+                                Cursor="Hand" Click="BtnLimpiar_Click">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Border" Background="#6c757d" CornerRadius="5">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <iconPacks:PackIconMaterial Kind="Broom" 
+                                                                        Width="20" Height="20" 
+                                                                        Foreground="White" Margin="0,0,8,0"/>
+                                            <ContentPresenter Content="{TemplateBinding Content}"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Border" Property="Background" Value="#5a6268"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>
